@@ -34,3 +34,4 @@ alias install-system="apt-get install apache2 mysql-server php5 libapache2-mod-p
 #
 
 export PATH=$PATH:/home/$USERNAME/bin
+EDITOR=vim
