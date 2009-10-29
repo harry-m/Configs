@@ -1,0 +1,4 @@
+# Firefox backspace fix.
+about:config => browser.backspace_action = 0
+
+
