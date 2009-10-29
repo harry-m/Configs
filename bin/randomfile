@@ -1,0 +1,5 @@
+files=(*)        # create an array of the files.
+N=${#files[@]}          # Number of members in the array
+((N=RANDOM%N))
+
+echo \"`pwd`/${files[$N]}\"

@@ -1,0 +1,18 @@
+#!/usr/bin/php
+<?php
+
+$arg = $_SERVER['argv'][1];
+
+if(is_numeric($arg))
+{
+	$date = $arg;
+}
+else
+{
+	$date = strtotime($arg);
+}
+
+echo "ctime: $date\n";
+echo "date: " . date('r', $date) . "\n";
+
+?>

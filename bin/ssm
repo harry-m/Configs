@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ ! -d $2 ]; then
+  sudo mkdir $2
+fi
+
+sudo sshfs $1 $2 -o allow_other
