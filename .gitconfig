@@ -1,0 +1,7 @@
+[user]
+	email = harry@thedextrousweb.com
+	name = Harry Metcalfe
+
+[alias]
+	st = status
+	test =  !sh -c 'rake spec && rake cucumber'
