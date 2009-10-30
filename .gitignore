@@ -89,3 +89,10 @@ bin/spotify
 digigov/
 playdar/
 .credentials
+.Private
+.compiz/
+.ecryptfs
+.mission-control/
+.xsession-errors.old
+Downloads/
+
