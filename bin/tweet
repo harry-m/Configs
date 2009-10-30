@@ -2,4 +2,12 @@
 
 source ~/.credentials
 
+if [ -n "$*" ] 
+then 
+ INPUT="$*"
+else
+ INPUT=`cat /dev/stdin`
+fi
+
 curl -u $TWITTER_USER:$TWITTER_PASS -d status="$*" http://twitter.com/statuses/update.xml
+
