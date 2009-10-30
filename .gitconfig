@@ -5,3 +5,12 @@
 [alias]
 	st = status
 	test =  !sh -c 'rake spec && rake cucumber'
+        ci = commit
+        cia = commit -a
+        di = diff
+
+[push]
+        default = current
+
+[github]
+        user = harry-m
