@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ "$1" == "-t" ]; then
+  git pull && rake spec && rake cucumber && git push
+else
+  git pull && git push
+fi
