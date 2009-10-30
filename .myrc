@@ -27,7 +27,7 @@ alias ll="ls -la"
 # Packages
 #
 
-alias install-system="apt-get install apache2 mysql-server php5 libapache2-mod-php5 php5-mysql php5-gd php5-tidy tidy tcpdump unzip wine rubygems1.8 jedit wireshark mysql-admin ruby ruby-dev vim gnucash gnome-do traceroute nmap ack-grep vlc xchat liferea git-core tig subversion sshfs gimp inkscape digikam curl ; gem install rails iplayer-dl irb hpricot andand cucumber fastercsv haml json rake ruby-debug curb mysql rcov rspec rspec-rails"
+alias install-system="apt-get install flashplugin-nonfree apache2 mysql-server php5 libapache2-mod-php5 php5-mysql php5-gd php5-tidy tidy tcpdump unzip wine rubygems1.8 jedit wireshark mysql-admin ruby ruby-dev vim gnucash gnome-do traceroute nmap ack-grep vlc xchat liferea git-core tig subversion sshfs gimp inkscape digikam curl ; gem install rails iplayer-dl irb hpricot andand cucumber fastercsv haml json rake ruby-debug curb mysql rcov rspec rspec-rails"
 
 #
 # Environment
