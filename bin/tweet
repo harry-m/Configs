@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source ~/.credentials
+
+curl -u $TWITTER_USER:$TWITTER_PASS -d status="$*" http://twitter.com/statuses/update.xml
