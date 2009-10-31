@@ -98,5 +98,10 @@ Downloads/
 .irb_history
 .liferea_1.6/
 .xinput.d/
-
 .apport-ignore.xml
+.gem/
+.subversion/
+bin/cdp
+crap/
+hmrc
+
