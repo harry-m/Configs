@@ -104,4 +104,7 @@ Downloads/
 bin/cdp
 crap/
 hmrc
+.sup/
+.ttrack
+.vim/.netrwhist
 
