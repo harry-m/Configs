@@ -5,6 +5,7 @@ require 'hpricot'
 require 'open-uri'
 require 'uri'
 require 'optparse'
+require 'net/http'
 
 class IsohuntSearch
   def initialize(arguments, stdin)
@@ -12,9 +13,16 @@ class IsohuntSearch
   end
 
   def fetch_torrent_uri(details_path)
-    details = Hpricot(open("http://isohunt.com#{details_path}"), 'User-Agent' => 'Firefox')
+    uri = "http://isohunt.com#{details_path}"
+    details = Hpricot(open(uri), 'User-Agent' => @options[:useragent])
+    image = (details/'img[@src="/img/dl-trans.gif"]').first
     
-    "http://isohunt.com" + (details/'img[@src="/img/dl-trans.gif"]').first.parent[:href]
+    if !image
+      STDERR.puts "Unable to find download link on detail page (#{uri})"
+      exit 1
+    end
+
+    "http://isohunt.com#{image.parent[:href]}"
   end
 
   def run()
@@ -23,7 +31,7 @@ class IsohuntSearch
       exit 0
     end
     
-    search = Hpricot(open("http://isohunt.com/torrents/#{URI.escape(@input[:terms])}?iht=-1&ihp=1&ihs1=2&iho1=d", 'User-Agent' => 'Firefox'))
+    search = Hpricot(open("http://isohunt.com/torrents/#{URI.escape(@input[:terms])}?iht=-1&ihp=1&ihs1=2&iho1=d", 'User-Agent' => @options[:useragent])) 
     
     torrents = []
     
@@ -56,8 +64,28 @@ class IsohuntSearch
       torrents.each do |t| 
         printf(format, t[:id], "#{t[:seeders]}/#{t[:leechers]}", "#{t[:rating]}/#{t[:comments]}", t[:size], t[:name])
       end
-    else
+    elsif @options[:print]
       puts fetch_torrent_uri(torrents[0][:details_path])
+    else
+      begin
+        url = URI.parse(fetch_torrent_uri(torrents[0][:details_path]))
+        res = Net::HTTP.start(url.host, url.port) {|http|
+          http.get(url.path, {'User-Agent' => @options[:useragent]})
+        }
+      rescue Exception => e
+        STDERR.puts "Unable to download torrent file: #{e.message}";
+        exit 1
+      end
+
+      if !res.code.match(/2\d\d/) && !res.code.match(/3\d\d/)
+        STDERR.puts "Unable to download torrent: #{res.message}"
+        exit 1
+      end
+
+      filename = url.path.split('/').last
+      File.open(filename, 'w') { |f| f.write(res.body) }
+
+      STDERR.puts "Saved #{filename}"
     end
 
     1
@@ -69,14 +97,17 @@ class IsohuntSearch
     options[:help] = false
     options[:get] = nil
     options[:search] = false
+    options[:print] = false
+    options[:useragent] = "Firefox"
 
     opts = OptionParser.new do |opts|
       opts.banner = "Usage: isohunt [options] <search terms>"
       
       opts.separator(" ")
-      opts.separator("By default, isohunt will emit the URI of the torrent that matches your terms and")
+      opts.separator("By default, isohunt will download the torrent that matches your terms and")
       opts.separator("has the most seeds. To override this behaviour, you can use -s to display search")
-      opts.separator("results, and -g to emit the URI of the torrent for a specific result")
+      opts.separator("results, -g <ID> to emit the URI of the torrent for a specific result, or -p")
+      opts.separator("to print the .torrent file's URI instead of downloading it")
       opts.separator(" ")
 
       opts.separator("Options:")
@@ -87,6 +118,14 @@ class IsohuntSearch
 
       opts.on("-g ID", "--get ID", "Retreive the .torrent URI for the specified result") do |id|
         options[:get] = id
+      end
+
+      opts.on("-p", "--print", "Print the URI of the best-looking torrent rather than downloading it") do |print|
+        options[:print] = print
+      end
+
+      opts.on("-u STRING", "--user-agent STRING", "Specify a user agent. Default: #{options[:useragent]}") do |useragent|
+        options[:useragent] = useragent
       end
 
       opts.on_tail("-h", "--help", "This help information") do |help|
