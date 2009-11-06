@@ -24,10 +24,37 @@ class IsohuntSearch
 
     "http://isohunt.com#{image.parent[:href]}"
   end
+  
+  def download_torrent(details_path, name = "")
+    begin
+      url = URI.parse(fetch_torrent_uri(details_path))
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.get(url.path, {'User-Agent' => @options[:useragent]})
+      }
+    rescue Exception => e
+      STDERR.puts "Unable to download torrent file: #{e.message}";
+      exit 1
+    end
+
+    if !res.code.match(/2\d\d/) && !res.code.match(/3\d\d/)
+      STDERR.puts "Unable to download torrent: #{res.message}"
+      exit 1
+    end
+
+    if name == ""
+      filename = url.path.split('/').last
+    else
+      filename = name.gsub(/[\.\s]+/, '_').gsub(/\W/, '') + ".torrent"
+    end
+    
+    File.open(filename, 'w') { |f| f.write(res.body) }
+
+    STDERR.puts "Saved #{filename}"
+  end
 
   def run()
     if @options[:get]
-      puts fetch_torrent_uri("/torrent_details/#{@options[:get]}")
+      download_torrent("/torrent_details/#{@options[:get]}")
       exit 0
     end
     
@@ -50,6 +77,12 @@ class IsohuntSearch
       }
     end
 
+    if torrents.length == 0
+      STDERR.puts "No matching torrents found"
+      exit 1
+    end
+
+    
     if @options[:search]
       torrents = [{:id => "ID", :seeders => "S", :leechers => "L", :rating => "R", :comments => "C", :size => "Size", :name => "Name"}] + torrents;
 
@@ -64,30 +97,22 @@ class IsohuntSearch
       torrents.each do |t| 
         printf(format, t[:id], "#{t[:seeders]}/#{t[:leechers]}", "#{t[:rating]}/#{t[:comments]}", t[:size], t[:name])
       end
-    elsif @options[:print]
-      puts fetch_torrent_uri(torrents[0][:details_path])
     else
-      begin
-        url = URI.parse(fetch_torrent_uri(torrents[0][:details_path]))
-        res = Net::HTTP.start(url.host, url.port) {|http|
-          http.get(url.path, {'User-Agent' => @options[:useragent]})
-        }
-      rescue Exception => e
-        STDERR.puts "Unable to download torrent file: #{e.message}";
+      if torrents[0][:seeders].to_i < 5
+        STDERR.puts "The best-looking torrent looks useless (#{torrents[0][:seeders]} seeders), giving up."
         exit 1
       end
-
-      if !res.code.match(/2\d\d/) && !res.code.match(/3\d\d/)
-        STDERR.puts "Unable to download torrent: #{res.message}"
-        exit 1
+      
+      if torrents[0][:seeders].to_i < 100
+        STDERR.puts "The best-looking torrent looks a bit squiffy (only #{torrents[0][:seeders]} seeders), but using it anyway"
       end
 
-      filename = url.path.split('/').last
-      File.open(filename, 'w') { |f| f.write(res.body) }
-
-      STDERR.puts "Saved #{filename}"
+      if @options[:print]
+        puts fetch_torrent_uri(torrents[0][:details_path])
+      else
+        download_torrent(torrents[0][:details_path], torrents[0][:name])
+      end
     end
-
     1
   end
 
@@ -103,13 +128,16 @@ class IsohuntSearch
     opts = OptionParser.new do |opts|
       opts.banner = "Usage: isohunt [options] <search terms>"
       
-      opts.separator(" ")
+      opts.separator("")
       opts.separator("By default, isohunt will download the torrent that matches your terms and")
       opts.separator("has the most seeds. To override this behaviour, you can use -s to display search")
-      opts.separator("results, -g <ID> to emit the URI of the torrent for a specific result, or -p")
-      opts.separator("to print the .torrent file's URI instead of downloading it")
-      opts.separator(" ")
-
+      opts.separator("results, -g <ID> to download a specific torrent, or -p to print the best-looking")
+      opts.separator(".torrent file's URI instead of downloading it")
+      opts.separator("")
+      opts.separator("Downloading the best-looking torrent only really works if you choose good")
+      opts.separator("search terms, like: 'My Special Show s01e01'. If you can't do that, use")
+      opts.separator("-s and then -g to pick a specific torrent from the results")
+      opts.separator("")
       opts.separator("Options:")
 
       opts.on("-s", "--search", "Display results rather than emitting the best-looking torrent's URI.") do |search|
@@ -133,7 +161,15 @@ class IsohuntSearch
          exit 1
       end
       
-      opts.parse!(arguments)
+      begin 
+        opts.parse!(arguments)
+      rescue OptionParser::InvalidOption => e
+        STDERR.puts "#{e.message}"
+        puts opts
+
+        exit 1
+      end
+
       options
     end
   
