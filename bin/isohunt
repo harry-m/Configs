@@ -32,7 +32,7 @@ class IsohuntSearch
         http.get(url.path, {'User-Agent' => @options[:useragent]})
       }
     rescue Exception => e
-      STDERR.puts "Unable to download torrent file: #{e.message}";
+      STDERR.puts "Unable to download torrent file: #{e.message}"
       exit 1
     end
 
@@ -65,10 +65,12 @@ class IsohuntSearch
     (search/'a').each do |a|
       next if !a[:href] || !a[:href].match(/^\/torrent_details/) || !a[:href].match(/tab=summary/)
       
+      name = Hpricot(a.inner_html.gsub(/<br\s*\/?>/, ', ')).inner_text
+
       torrents << {
         :id => a[:href].match(/\/torrent_details\/(\d+)/)[1],
         :details_path => a[:href],
-        :name => a.inner_text,
+        :name => name,
         :rating => a.parent.search('a').first[:title].match(/(\D?\d+) rating/)[1],
         :comments => a.parent.search('a').first[:title].match(/(\d+) comments/)[1],
         :size => a.parent.next.inner_text,
