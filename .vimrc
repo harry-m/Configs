@@ -13,8 +13,6 @@ set incsearch
 " Map a key to unhilight searched-for terms.
 map _ :nohls
 
-hi Normal ctermbg=black ctermfg=gray
-
 " Don't beep.
 set visualbell
 
