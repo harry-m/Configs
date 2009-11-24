@@ -28,7 +28,7 @@ alias wget='wget -erobots=off --no-check-certificate'
 alias time="time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
 alias ll="ls -la"
-
+alias apt="aptitude"
 #
 # Packages
 #
