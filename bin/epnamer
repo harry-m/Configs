@@ -1,0 +1,196 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'hpricot'
+require 'open-uri'
+require 'uri'
+require 'optparse'
+require 'net/http'
+require 'ftools'
+
+
+class EpGuides
+  def initialize(arguments, stdin)
+    @input, @options = process_arguments(arguments, stdin)
+  end
+  
+  def get_series_name(path)
+    series = Dir.entries(path).select{|filename| !filename.match(/^\./)}.collect{|filename| matches = filename.match(/^(.+?) -/); matches != nil && matches[1]}.uniq
+    
+    if !series || series.size == 0 || series.first == nil
+      puts "Unable to detect series name because no suitably named files were found. Are you sure you're in the right directory?\n"
+      exit 1
+    elsif series.size > 1
+      puts "Unable to detect series name because there are ambiguously named entries:\n\n\t#{series.join("\n\t")}\nRename these files or specify the correct series name with -s\n"
+      exit 1
+    end
+    
+    series[0]
+  end
+  
+  def get_epguides_url(series)
+    "http://epguides.com/" + series.gsub(/^The|\s/, '')
+  end
+  
+  def parse_episodes(episode_data)
+    episodes = []
+
+    episode_data.split("\n").select{|line| line.match(/^\s*\d+\.(.+)\>$/)}.each do |line|
+      matches = line.match(/^\s*(\d+)\.\s+([0-9]+)-\s*([0-9]+).+?"([^"]+)".*?>([^<]+)<\/a>\s*$/)
+      
+      if !matches
+        puts "Warning: Unable to parse line from epguides:\n\t#{line}"
+        next
+      end
+      
+      episodes << {
+        :number  => matches[1],
+        :season  => matches[2].to_i,
+        :episode => matches[3].to_i,
+        :link    => matches[4],
+        :name    => matches[5]         
+      }
+    end
+    
+    episodes
+  end
+  
+  def parse_filename(filename)    
+    if matches = filename.downcase.match(/([0-9]+)x([0-9]+)/)
+      return {
+        :format => :x,
+        :season => matches[1].to_i,
+        :episode => matches[2].to_i,
+        :chunk => matches[0],
+        :extension => filename.match(/\.[^\.]+$/)[0]
+      }
+    elsif matches = filename.downcase.match(/s([0-9]+)e([0-9]+)/)
+      return {
+        :format => :se,
+        :season => matches[1].to_i,
+        :episode => matches[2].to_i,
+        :chunk => matches[0],
+        :extension => filename.match(/\.[^\.]+$/)[0]
+      }
+    else
+      puts "Unable to determine episode filename format. This tool only supports the '1x01' and 's01e01' naming conventions\n"
+      exit 1
+    end
+  end
+ 
+  def rename_files(episodes)
+    files = Dir.entries(@input[:path]).select{|filename| !filename.match(/^\./)}
+    
+    files.each do |filename|
+      file_details = parse_filename(filename)
+      episode_details = episodes.select{|episode| episode[:season] == file_details[:season] && episode[:episode] == file_details[:episode]}
+      
+      if episode_details.size > 1
+        puts "Warning: more than one episode matched file #{filename} (skipping)"
+        next
+      elsif episode_details.size == 0
+        puts "Warning: no matches for file #{filename} (skipping)"
+        next
+      end
+      
+      episode_details = episode_details.first
+      
+      new_filename = "#{@options[:series]} - #{file_details[:chunk]} - #{episode_details[:name]}#{file_details[:extension]}"
+      
+      if @options[:no_act]
+        puts "#{filename} => #{new_filename}"
+      else
+        File.move(filename, new_filename)
+      end
+    end
+  end
+
+  def run()
+    url = get_epguides_url(@options[:series])
+
+    begin
+      episode_data = Hpricot(open(url))
+    rescue Exception => e
+      STDERR.puts "Unable to retrieve episode data from #{url}: #{e.message}"
+      exit 1
+    end
+    
+    episodes = parse_episodes((episode_data/'#eplist').inner_html)
+    
+    rename_files(episodes)
+  end
+  
+  def process_arguments(arguments, stdin)
+    options = {}
+    
+    options[:help] = false
+    options[:no_act] = false
+    
+    opts = OptionParser.new do |opts|
+      opts.banner = "Usage: epnamer [options] [path]"
+      
+      opts.separator("Epnamer takes filenames that look like this:")
+      opts.separator("\n")
+      opts.separator("\tSeries Name - 1x01.avi")
+      opts.separator("\tSeries Name - s01e01.avi")
+      opts.separator("\n")
+      opts.separator("And makes them look like this:")
+      opts.separator("\n")
+      opts.separator("\tSeries Name - 1x01 - Episode Name.avi")
+      opts.separator("\tSeries Name - s01e01 - Episode Name.avi")
+      opts.separator("\n")
+      opts.separator("Episode data is pulled from epguides.")
+      opts.separator("\n")
+      opts.separator("[path] defaults to the current directory.")
+      opts.separator("\n")
+      
+      opts.separator("Options:")
+
+      opts.on("-s SERIES", "--series \"SERIES\"", "Specify the name of the series (epnamer will try to detect this automatically from the filenames)") do |series|
+        options[:series] = series
+      end
+      
+      opts.on("-u URI", "--uri \"URI\"", "Specify the epguides.com URI from which epnamer should retreive episode data.", "You only need to use this if epnamer picks the wrong one.") do |series|
+        options[:uri] = series
+      end
+
+      opts.on("-n", "--no-act", "No action -- just print the new filenames") do |no_action|
+        options[:no_act] = true
+      end
+
+      opts.on_tail("-h", "--help", "This help information") do |help|
+         puts opts
+         exit 1
+      end
+      
+      begin 
+        opts.parse!(arguments)
+      rescue OptionParser::InvalidOption => e
+        STDERR.puts "#{e.message}"
+        puts opts
+
+        exit 1
+      end
+
+      options
+    end
+  
+    input = {:path => arguments[0]}
+    
+    if input[:path] == nil
+      input[:path] = '.'
+    end
+    
+    if options[:series] == nil
+      options[:series] = get_series_name(input[:path])
+    end
+    
+    options[:uri] = get_epguides_url(options[:series])
+    
+    [input, options]
+  end
+end
+
+epguides = EpGuides.new(ARGV, STDIN)
+epguides.run
+
