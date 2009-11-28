@@ -17,7 +17,7 @@ class EpGuides
   end
   
   def get_series_name(path)
-    series = Dir.entries(path).select{|filename| !filename.match(/^\./)}.collect{|filename| matches = filename.match(/^(.+?)\s*(-|\.)/); matches != nil && matches[1]}.uniq
+    series = Dir.entries(path).select{|filename| !File.directory?(filename)}.collect{|filename| matches = filename.match(/^(.+?)\s*(-|\.)/); matches != nil && matches[1]}.uniq
     
     if !series || series.size == 0 || series.first == nil
       puts "Unable to detect series name because no suitably named files were found. Are you sure you're in the right directory?\n"
@@ -43,7 +43,7 @@ class EpGuides
       matches = line.match(/^\s*(\d+)\.\s+([0-9]+)-\s*([0-9]+).+?"([^"]+)".*?>([^<]+)<\/a>\s*$/)
       
       if !matches
-        puts "Warning: Unable to parse line from epguides:\n\t#{line}"
+        puts "Warning: Unable to parse line from epguides:\n\t#{line}" if @options[:verbose]
         next
       end
       
@@ -66,7 +66,7 @@ class EpGuides
         :season => matches[1].to_i,
         :episode => matches[2].to_i,
         :chunk => matches[0],
-        :extension => filename.match(/\.[^\.]+$/)[0]
+        :extension => filename.match(/(\.[^\.]+)$/)[1]
       }
     elsif matches = filename.downcase.match(/s([0-9]+)e([0-9]+)/)
       return {
@@ -74,26 +74,39 @@ class EpGuides
         :season => matches[1].to_i,
         :episode => matches[2].to_i,
         :chunk => matches[0],
-        :extension => filename.match(/\.[^\.]+$/)[0]
+        :extension => filename.match(/(\.[^\.]+)$/)[1]
+      }
+    elsif matches = filename.downcase.match(/\b([0-9]+?)([0-9]{2})\b/)
+      return {
+        :format => :se,
+        :season => matches[1].to_i,
+        :episode => matches[2].to_i,
+        :chunk => matches[0],
+        :extension => filename.match(/(\.[^\.]+)$/)[1]
       }
     else
-      puts "Unable to determine episode filename format. This tool only supports the '1x01' and 's01e01' naming conventions\n"
-      exit 1
+      return nil
     end
   end
  
   def rename_files(episodes)
-    files = Dir.entries(@input[:path]).select{|filename| !filename.match(/^\./)}
+    files = Dir.entries(@input[:path]).select{|filename| !File.directory?(filename)}
     
     files.each do |filename|
       file_details = parse_filename(filename)
+      
+      if !file_details
+        puts "Unable to determine episode format for file #{filename} (skipping)\nThis tool only supports the '1x01' and 's01e01' naming conventions\n" if @options[:verbose]
+        next
+      end
+      
       episode_details = episodes.select{|episode| episode[:season] == file_details[:season] && episode[:episode] == file_details[:episode]}
       
       if episode_details.size > 1
-        puts "Warning: more than one episode matched file #{filename} (skipping)"
+        puts "Warning: more than one episode matched file #{filename} (skipping)" if @options[:verbose]
         next
       elsif episode_details.size == 0
-        puts "Warning: no matches for file #{filename} (skipping)"
+        puts "Warning: no matches for file #{filename} (skipping)" if @options[:verbose]
         next
       end
       
@@ -134,6 +147,8 @@ class EpGuides
     episodes = parse_episodes((episode_data/'#eplist').inner_html)
     
     rename_files(episodes)
+    
+    exit 0
   end
   
   def process_arguments(arguments, stdin)
@@ -165,6 +180,10 @@ class EpGuides
       opts.separator("\n")
       opts.separator("Episode data is pulled from epguides. [path] defaults to the current directory.")
       opts.separator("\n")
+      opts.separator("Hairy warning: if epguide's episode numbers are different from yours, files will be renamed")
+      opts.separator("incorrectly. This can be seriously amazingly annoying if you then have to manually check a")
+      opts.separator("bunch of episodes and rename them. Be careful.")
+      opts.separator("\n")
       
       opts.separator("Options:")
 
@@ -176,17 +195,21 @@ class EpGuides
         options[:uri] = series
       end
       
-      opts.on("-f <x|se>", "--format <x|se>", "Force the output format to x (1x01) or se (s01e01) formats. Defaults to the convention used by the original filename.") do |format|
+      opts.on("-f <x|se>", "--format <x|se>", "Force the output format to x (1x01), se (s01e01) or n (101) formats. Defaults to the convention used by the original filename.") do |format|
         options[:format] = format.to_sym
         
         if options[:format] != :se && options[:format] != :x
-          puts "Warning: ignoring invalid format option '#{options[:format]}', should be one of: x, se"
+          puts "Warning: ignoring invalid format option '#{options[:format]}', should be one of: x, se, n"
           options[:format] = nil
         end
       end
 
       opts.on("-n", "--no-act", "No action -- just print the new filenames") do |no_action|
         options[:no_act] = true
+      end
+      
+      opts.on("-v", "--v", "More verbose output") do |no_action|
+        options[:verbose] = true
       end
 
       opts.on_tail("-h", "--help", "This help information") do |help|
