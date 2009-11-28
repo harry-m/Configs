@@ -7,6 +7,8 @@ require 'uri'
 require 'optparse'
 require 'net/http'
 require 'ftools'
+require 'htmlentities'
+
 
 
 class EpGuides
@@ -15,7 +17,7 @@ class EpGuides
   end
   
   def get_series_name(path)
-    series = Dir.entries(path).select{|filename| !filename.match(/^\./)}.collect{|filename| matches = filename.match(/^(.+?) -/); matches != nil && matches[1]}.uniq
+    series = Dir.entries(path).select{|filename| !filename.match(/^\./)}.collect{|filename| matches = filename.match(/^(.+?)\s*(-|\.)/); matches != nil && matches[1]}.uniq
     
     if !series || series.size == 0 || series.first == nil
       puts "Unable to detect series name because no suitably named files were found. Are you sure you're in the right directory?\n"
@@ -24,6 +26,8 @@ class EpGuides
       puts "Unable to detect series name because there are ambiguously named entries:\n\n\t#{series.join("\n\t")}\nRename these files or specify the correct series name with -s\n"
       exit 1
     end
+    
+    series[0].gsub!(/\.|_\-/, ' ')
     
     series[0]
   end
@@ -95,7 +99,19 @@ class EpGuides
       
       episode_details = episode_details.first
       
-      new_filename = "#{@options[:series]} - #{file_details[:chunk]} - #{episode_details[:name]}#{file_details[:extension]}"
+      if @options[:format]
+        format = @options[:format]
+      else
+        format = file_details[:format]; 
+      end
+      
+      if format == :x
+        episode_chunk = sprintf("%dx%2.2d", episode_details[:season], episode_details[:episode])
+      elsif format == :se
+        episode_chunk = sprintf("s%2.2de%2.2d", episode_details[:season], episode_details[:episode])
+      end
+      
+      new_filename = HTMLEntities.new.decode("#{@options[:series]} - #{episode_chunk} - #{episode_details[:name]}#{file_details[:extension]}")
       
       if @options[:no_act]
         puts "#{filename} => #{new_filename}"
@@ -139,9 +155,15 @@ class EpGuides
       opts.separator("\tSeries Name - 1x01 - Episode Name.avi")
       opts.separator("\tSeries Name - s01e01 - Episode Name.avi")
       opts.separator("\n")
-      opts.separator("Episode data is pulled from epguides.")
+      opts.separator("By specifying arguments appropriately, you can also use epnamer to tidy up messy filenames:")
       opts.separator("\n")
-      opts.separator("[path] defaults to the current directory.")
+      opts.separator("\t$ ls")
+      opts.separator("\tSeries.Name.S01E01.ABC.XviD-0TV-BLAHBLAHBLOODYBLAH.avi")
+      opts.separator("\n")
+      opts.separator("\t$ epnamer -n -fx -s \"Series Name\"")
+      opts.separator("\tSeries.Name.S01E01.ABC.XviD-0TV-BLAHBLAHBLOODYBLAH.avi => Series Name - 1x01 - Episode Name.avi")
+      opts.separator("\n")
+      opts.separator("Episode data is pulled from epguides. [path] defaults to the current directory.")
       opts.separator("\n")
       
       opts.separator("Options:")
@@ -152,6 +174,15 @@ class EpGuides
       
       opts.on("-u URI", "--uri \"URI\"", "Specify the epguides.com URI from which epnamer should retreive episode data.", "You only need to use this if epnamer picks the wrong one.") do |series|
         options[:uri] = series
+      end
+      
+      opts.on("-f <x|se>", "--format <x|se>", "Force the output format to x (1x01) or se (s01e01) formats. Defaults to the convention used by the original filename.") do |format|
+        options[:format] = format.to_sym
+        
+        if options[:format] != :se && options[:format] != :x
+          puts "Warning: ignoring invalid format option '#{options[:format]}', should be one of: x, se"
+          options[:format] = nil
+        end
       end
 
       opts.on("-n", "--no-act", "No action -- just print the new filenames") do |no_action|
