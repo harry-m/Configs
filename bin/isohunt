@@ -1,0 +1,190 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'hpricot'
+require 'open-uri'
+require 'uri'
+require 'optparse'
+require 'net/http'
+
+class IsohuntSearch
+  def initialize(arguments, stdin)
+    @input, @options = process_arguments(arguments, stdin)
+  end
+
+  def fetch_torrent_uri(details_path)
+    uri = "http://isohunt.com#{details_path}"
+    details = Hpricot(open(uri), 'User-Agent' => @options[:useragent])
+    image = (details/'img[@src="/img/dl-trans.gif"]').first
+    
+    if !image
+      STDERR.puts "Unable to find download link on detail page (#{uri})"
+      exit 1
+    end
+
+    "http://isohunt.com#{image.parent[:href]}"
+  end
+  
+  def download_torrent(details_path, name = "")
+    begin
+      url = URI.parse(fetch_torrent_uri(details_path))
+      res = Net::HTTP.start(url.host, url.port) {|http|
+        http.get(url.path, {'User-Agent' => @options[:useragent]})
+      }
+    rescue Exception => e
+      STDERR.puts "Unable to download torrent file: #{e.message}"
+      exit 1
+    end
+
+    if !res.code.match(/2\d\d/) && !res.code.match(/3\d\d/)
+      STDERR.puts "Unable to download torrent: #{res.message}"
+      exit 1
+    end
+
+    if name == ""
+      filename = url.path.split('/').last
+    else
+      filename = name.gsub(/[\.\s]+/, '_').gsub(/\W/, '') + ".torrent"
+    end
+    
+    File.open(filename, 'w') { |f| f.write(res.body) }
+
+    STDERR.puts "Saved #{filename}"
+  end
+
+  def run()
+    if @options[:get]
+      download_torrent("/torrent_details/#{@options[:get]}")
+      exit 0
+    end
+    
+    search = Hpricot(open("http://isohunt.com/torrents/#{URI.escape(@input[:terms])}?iht=-1&ihp=1&ihs1=2&iho1=d", 'User-Agent' => @options[:useragent])) 
+    
+    torrents = []
+    
+    (search/'a').each do |a|
+      next if !a[:href] || !a[:href].match(/^\/torrent_details/) || !a[:href].match(/tab=summary/)
+      
+      name = Hpricot(a.inner_html.gsub(/<br\s*\/?>/, ', ')).inner_text
+
+      torrents << {
+        :id => a[:href].match(/\/torrent_details\/(\d+)/)[1],
+        :details_path => a[:href],
+        :name => name,
+        :rating => a.parent.search('a').first[:title].match(/(\D?\d+) rating/)[1],
+        :comments => a.parent.search('a').first[:title].match(/(\d+) comments/)[1],
+        :size => a.parent.next.inner_text,
+        :seeders => a.parent.next.next.inner_text,
+        :leechers => a.parent.next.next.next.inner_text
+      }
+    end
+
+    if torrents.length == 0
+      STDERR.puts "No matching torrents found"
+      exit 1
+    end
+
+    
+    if @options[:search]
+      torrents = [{:id => "ID", :seeders => "S", :leechers => "L", :rating => "R", :comments => "C", :size => "Size", :name => "Name"}] + torrents;
+
+      id_size = torrents.collect{|t| t[:id].length}.sort.last
+      seedleech_size = torrents.collect{|t| t[:seeders].length + t[:leechers].length + 1}.sort.last
+      ratecomment_size = torrents.collect{|t| t[:rating].length + t[:comments].length + 1}.sort.last
+      size_size = torrents.collect{|t| t[:size].length}.sort.last
+      name_size = torrents.collect{|t| t[:name].length}.sort.last
+
+      format = "%-#{id_size}s  %-#{seedleech_size}s  %-#{ratecomment_size}s  %-#{size_size}s  %-#{name_size}s\n"
+
+      torrents.each do |t| 
+        printf(format, t[:id], "#{t[:seeders]}/#{t[:leechers]}", "#{t[:rating]}/#{t[:comments]}", t[:size], t[:name])
+      end
+    else
+      if torrents[0][:seeders].to_i < 5
+        STDERR.puts "The best-looking torrent looks useless (#{torrents[0][:seeders]} seeders), giving up."
+        exit 1
+      end
+      
+      if torrents[0][:seeders].to_i < 100
+        STDERR.puts "The best-looking torrent looks a bit squiffy (only #{torrents[0][:seeders]} seeders), but using it anyway"
+      end
+
+      if @options[:print]
+        puts fetch_torrent_uri(torrents[0][:details_path])
+      else
+        download_torrent(torrents[0][:details_path], torrents[0][:name])
+      end
+    end
+    1
+  end
+
+  def process_arguments(arguments, stdin)
+    options = {}
+    
+    options[:help] = false
+    options[:get] = nil
+    options[:search] = false
+    options[:print] = false
+    options[:useragent] = "Firefox"
+
+    opts = OptionParser.new do |opts|
+      opts.banner = "Usage: isohunt [options] <search terms>"
+      
+      opts.separator("")
+      opts.separator("By default, isohunt will download the torrent that matches your terms and")
+      opts.separator("has the most seeds. To override this behaviour, you can use -s to display search")
+      opts.separator("results, -g <ID> to download a specific torrent, or -p to print the best-looking")
+      opts.separator(".torrent file's URI instead of downloading it")
+      opts.separator("")
+      opts.separator("Downloading the best-looking torrent only really works if you choose good")
+      opts.separator("search terms, like: 'My Special Show s01e01'. If you can't do that, use")
+      opts.separator("-s and then -g to pick a specific torrent from the results")
+      opts.separator("")
+      opts.separator("Options:")
+
+      opts.on("-s", "--search", "Display results rather than emitting the best-looking torrent's URI.") do |search|
+        options[:search] = search
+      end
+
+      opts.on("-g ID", "--get ID", "Retreive the .torrent URI for the specified result") do |id|
+        options[:get] = id
+      end
+
+      opts.on("-p", "--print", "Print the URI of the best-looking torrent rather than downloading it") do |print|
+        options[:print] = print
+      end
+
+      opts.on("-u STRING", "--user-agent STRING", "Specify a user agent. Default: #{options[:useragent]}") do |useragent|
+        options[:useragent] = useragent
+      end
+
+      opts.on_tail("-h", "--help", "This help information") do |help|
+         puts opts
+         exit 1
+      end
+      
+      begin 
+        opts.parse!(arguments)
+      rescue OptionParser::InvalidOption => e
+        STDERR.puts "#{e.message}"
+        puts opts
+
+        exit 1
+      end
+
+      options
+    end
+  
+    input = {:terms => arguments[0]}
+    
+    if !options[:get] && !input[:terms]
+      input[:terms] = stdin.read
+    end
+
+    [input, options]
+  end
+end
+
+ihs = IsohuntSearch.new(ARGV, STDIN)
+ihs.run
+
