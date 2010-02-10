@@ -16,8 +16,9 @@ alias haggis='ssh harry@haggis.ukcod.org.uk'
 alias cnm='ssh root@cnm.independent.gov.uk'
 alias learnrev='ssh rails@learnrev-001.vm.brightbox.net'
 alias home='wget -q -O /tmp/home.txt http://harrymetcalfe.com/misc/home.txt ; source /tmp/home.txt ; rm /tmp/home.txt ; ssh harry@$HOME_IP'
-alias work='ssh harry@85.189.220.244'
+alias work='ssh harry@87.236.135.205'
 alias lain='ssh lain'
+alias ipsa='ssh ipsacon.dh.bytemark.co.uk'
 
 #
 # Commands
