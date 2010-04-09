@@ -1,4 +1,3 @@
-set mouse=a
 set bg=dark
 syntax on
 set autoindent 

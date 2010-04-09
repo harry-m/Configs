@@ -19,6 +19,7 @@ alias home='wget -q -O /tmp/home.txt http://harrymetcalfe.com/misc/home.txt ; so
 alias work='ssh harry@87.236.135.205'
 alias lain='ssh lain'
 alias ipsa='ssh ipsacon.dh.bytemark.co.uk'
+alias oandi='ssh domain2547659@ssh.openandonline.2020publicservicestrust.org'
 
 #
 # Commands
