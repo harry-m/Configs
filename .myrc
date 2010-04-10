@@ -30,6 +30,7 @@ alias ack='ack-grep --all'
 alias wget='wget -erobots=off --no-check-certificate'
 alias time="time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
+alias ls="ls --color"
 alias ll="ls -la"
 alias apt="sudo aptitude"
 
