@@ -17,6 +17,7 @@ bindkey ";5C" forward-word
 bindkey ";5D" backward-word
 bindkey "$terminfo[khome]" beginning-of-line
 bindkey "$terminfo[kend]" end-of-line
+bindkey "^[[3~" delete-char
 
 # Enable autocompletion
 compinit
