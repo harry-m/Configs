@@ -1,10 +1,4 @@
 #
-# Start ssh-agent
-#
-
-eval `ssh-agent`
-
-#
 # Other machines
 #
 
