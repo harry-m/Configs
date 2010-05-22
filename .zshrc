@@ -3,9 +3,19 @@ HISTFILE=~/.histfile
 HISTSIZE=10000
 SAVEHIST=10000
 
-# Load stuff
-autoload -Uz vcs_info
-autoload -Uz compinit
+# Autocompletion
+autoload -Uz compinit && compinit
+
+# Colors
+autoload colors zsh/terminfo
+if [[ "$terminfo[colors]" -ge 8 ]]; then
+  colors
+fi
+for color in RED GREEN YELLOW BLUE MAGENTA CYAN WHITE; do
+    eval PR_$color='%{$terminfo[bold]$fg[${(L)color}]%}'
+    eval PR_LIGHT_$color='%{$fg[${(L)color}]%}'
+done
+PR_NO_COLOUR="%{$terminfo[sgr0]%}"
 
 # Zsh settings
 setopt appendhistory autocd notify promptsubst
@@ -19,18 +29,53 @@ bindkey "$terminfo[khome]" beginning-of-line
 bindkey "$terminfo[kend]" end-of-line
 bindkey "^[[3~" delete-char
 
-# Enable autocompletion
-compinit
- 
 # Prompt
+
+## Git stuffs
+autoload -Uz vcs_info
+
 zstyle ':vcs_info:*' disable bzr # gratuitously slow
 zstyle ':vcs_info:*' formats ' [%b]'
-precmd() { vcs_info }
+function precmd () { 
+  vcs_info 
+}
 
-export PS1='%D{%H:%M} %n@%m:%~${vcs_info_msg_0}%# '
+commandline=''
+
+## TSocks?
+if [[ $LD_PRELOAD == *libtsocks.so* ]]; then
+  commandline="$commandline$PR_GREEN""[tsocks]$PR_NO_COLOUR "
+fi
+
+## The time
+commandline="$commandline$PR_LIGHT_BLUE%T$PR_NO_COLOUR "
+
+## Root?
+if [[ $UID -eq 0 ]]; then
+  commandline="$commandline$PR_RED"
+fi
+
+## User/host
+commandline="$commandline%n@%m"
+
+## Root?
+if [[ $UID -eq 0 ]]; then
+  commandline="$commandline$PR_NO_COLOUR"
+fi
+
+## Path
+commandline="$commandline:%~"
+
+## Git stuff
+commandline="$commandline$PR_LIGHT_MAGENTA\$vcs_info_msg_0_$PR_NO_COLOUR"
+
+## Prompt char
+commandline="$commandline%# "
+
+export PS1=$commandline
 
 # Aliases and old bash stuff
 source ~/.myrc
 
-# Funky zsh-style aliasfunction magic
-mdc() { mkdir -p "$1" && cd "$1" }
+# Funky zsh aliasfunction magic
+mcd() { mkdir -p "$1" && cd "$1" }
