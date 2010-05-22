@@ -20,7 +20,6 @@ alias oandi='ssh domain2547659@ssh.openandonline.2020publicservicestrust.org'
 #
 
 alias j='jedit'
-alias ack='ack-grep --all'
 alias wget='wget -erobots=off --no-check-certificate'
 alias time="time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
