@@ -23,3 +23,8 @@ autocmd BufReadPost *
   \ if line("'\"") > 0 && line ("'\"") <= line("$") |
   \ exe "normal! g'\"" |
   \ endif
+
+" Extra mappings
+com Wq :wq
+nmap <Esc>o :exe "norm o<Bslash><Char-0x3c>Esc>k0".(col('.')-1)."l"<CR>
+
