@@ -109,6 +109,10 @@ class IsohuntSearch
         STDERR.puts "The best-looking torrent looks a bit squiffy (only #{torrents[0][:seeders]} seeders), but using it anyway"
       end
 
+      if torrents[0][:rating].to_i < 0
+        STDERR.puts "The best-looking torrent looks suspicious. It has a negative rating: #{torrents[0][:rating]}. Giving up."
+      end
+
       if @options[:print]
         puts fetch_torrent_uri(torrents[0][:details_path])
       else
