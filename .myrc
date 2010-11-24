@@ -1,10 +1,4 @@
 #
-# Start ssh-agent
-#
-
-eval `ssh-agent`
-
-#
 # Other machines
 #
 
@@ -16,26 +10,24 @@ alias haggis='ssh harry@haggis.ukcod.org.uk'
 alias cnm='ssh root@cnm.independent.gov.uk'
 alias learnrev='ssh rails@learnrev-001.vm.brightbox.net'
 alias home='wget -q -O /tmp/home.txt http://harrymetcalfe.com/misc/home.txt ; source /tmp/home.txt ; rm /tmp/home.txt ; ssh harry@$HOME_IP'
-alias work='ssh harry@85.189.220.244'
+alias work='ssh harry@87.236.135.205'
 alias lain='ssh lain'
+alias ipsa='ssh ipsacon.dh.bytemark.co.uk'
+alias 2020pst='ssh domain2552305@ssh.onlineorinline.2020publicservicestrust.org'
+alias l4h='ssh 84.22.182.47'
 
 #
 # Commands
 #
 
 alias j='jedit'
-alias ack='ack-grep --all'
 alias wget='wget -erobots=off --no-check-certificate'
 alias time="time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
+alias ls="ls --color"
 alias ll="ls -la"
 alias apt="sudo aptitude"
 
-#
-# Packages
-#
-
-alias install-system="apt-get install openssh-server flashplugin-nonfree apache2 mysql-server php5 libapache2-mod-php5 php5-mysql php5-gd php5-tidy tidy tcpdump unzip wine rubygems1.8 jedit wireshark mysql-admin ruby ruby-dev vim gnucash gnome-do traceroute nmap ack-grep vlc xchat liferea git-core tig subversion sshfs gimp inkscape digikam curl ; gem install rails  irb hpricot andand cucumber fastercsv haml json rake ruby-debug curb mysql rcov rspec rspec-rails; gem install iplayer-dl --source http://gemcutter.org"
 
 #
 # Environment
