@@ -39,11 +39,12 @@ class EpGuides
   def parse_episodes(episode_data)
     episodes = []
 
-    episode_data.split("\n").select{|line| line.match(/^\s*\d+\.(.+)\>$/)}.each do |line|
-      matches = line.match(/^\s*(\d+)\.\s+([0-9]+)-\s*([0-9]+).+?"([^"]+)".*?>([^<]+)<\/a>\s*$/)
+    episode_lines = episode_data.gsub(/\r\n/, "\n").split("\n").select{|line| line.match(/^\s*\d+\s+\d+-(.+)\>$/)}.each do |line|
+      # 78     4-21      4AKJ21    15/May/09   <a href="http://www.tvrage.com/Prison_Break/episodes/785054">Rate of Exchange</a> <span class="Trailers">[<a href="http://www.tvrage.com/Prison_Break/episodes/785054/?trailer=1#trailer">Trailer</a>]</span>
+      matches = line.match(/^\s*(\d+)\s+([0-9]+)-\s*([0-9]+).+?"([^"]+)".*?>([^<]+)<\/a>\s*/)
       
       if !matches
-        puts "Warning: Unable to parse line from epguides:\n\t#{line}" if @options[:verbose]
+        puts "Warning: Unable to parse line from epguides:\n#{line}" if @options[:verbose]
         next
       end
       
@@ -52,8 +53,13 @@ class EpGuides
         :season  => matches[2].to_i,
         :episode => matches[3].to_i,
         :link    => matches[4],
-        :name    => matches[5]         
+        :name    => matches[5].gsub(/[\/\\\?:*<>|]/, '_')         
       }
+    end
+
+    if episodes.empty?
+      puts "Warning: Unable to parse episode data from epguides (use --debug to get more output)"
+      puts "Debug output:\n\n#{episode_data}" if @options[:debug]
     end
     
     episodes
@@ -210,6 +216,10 @@ class EpGuides
       
       opts.on("-v", "--v", "More verbose output") do |no_action|
         options[:verbose] = true
+      end
+
+      opts.on("--debug", "Debug output") do |no_action|
+        options[:debug] = true
       end
 
       opts.on_tail("-h", "--help", "This help information") do |help|
