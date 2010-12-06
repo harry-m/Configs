@@ -1,3 +1,9 @@
+.aptitude/
+.bash_logout
+.htoprc
+.profile
+.screen-profiles/
+.sudo_as_admin_successful
 .adobe/
 .appdata/
 .bash_history
