@@ -1,0 +1,73 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'hpricot'
+require 'open-uri'
+require 'uri'
+require 'optparse'
+require 'net/http'
+
+class Day9DL
+  def initialize(arguments, stdin)
+    @input, @options = process_arguments(arguments, stdin)
+  end
+
+  def run
+    if @input[:video].match(/\d+/)
+      video_uri = "http://blip.tv/file/#{@input[:video]}"
+    else
+      video_uri = @input[:video]
+    end
+
+    player = open(video_uri).read
+
+    matches = player.match(/player\.setPrimaryMediaUrl\("(.+)"\);/)
+
+    if !matches || matches[1] == nil
+      STDERR.puts "Couldn't find primary media URL";
+      exit 1
+    end
+
+    system("wget '#{matches[1]}'")
+    exit 0
+  end
+
+  def process_arguments(arguments, stdin)
+    options = {}
+
+
+    opts = OptionParser.new do |opts|
+      opts.banner = "Usage: day9dl [options] <video>"
+
+      opts.separator("")
+
+      opts.on_tail("-h", "--help", "This help information") do |help|
+         puts opts
+         exit 1
+      end
+
+      begin
+        opts.parse!(arguments)
+      rescue OptionParser::InvalidOption => e
+        STDERR.puts "#{e.message}"
+        puts opts
+
+        exit 1
+      end
+
+      options
+    end
+
+    input = {:video => arguments[0]}
+
+    if !input[:video]
+      input[:video] = stdin.read
+    end
+
+    [input, options]
+  end
+end
+
+d = Day9DL.new(ARGV, STDIN)
+d.run
+
