@@ -1,4 +1,5 @@
 .adobe/
+.rtorrent.rc
 .appdata/
 .bash_history
 .bash_profile
