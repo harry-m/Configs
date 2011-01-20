@@ -22,7 +22,7 @@ alias l4h='ssh 84.22.182.47'
 
 alias j='jedit'
 alias wget='wget -erobots=off --no-check-certificate'
-alias time="time -f '%C real %e user %U sys %S'"
+alias time="command time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
 alias ls="ls --color"
 alias ll="ls -la"
@@ -33,6 +33,7 @@ alias apt="sudo aptitude"
 # Environment
 #
 
+xmodmap -e "remove lock = Caps_Lock"
 export PATH=$PATH:~/bin
 EDITOR=vim
 VISUAL=vim
