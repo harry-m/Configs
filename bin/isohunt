@@ -22,12 +22,15 @@ class IsohuntSearch
       exit 1
     end
 
-    "http://isohunt.com#{image.parent[:href]}"
+    image.parent[:href]
   end
   
   def download_torrent(details_path, name = "")
     begin
       url = URI.parse(fetch_torrent_uri(details_path))
+      
+      STDERR.puts "Downloading torrent at #{url}..." if @options[:verbose]
+
       res = Net::HTTP.start(url.host, url.port) {|http|
         http.get(url.path, {'User-Agent' => @options[:useragent]})
       }
@@ -52,13 +55,27 @@ class IsohuntSearch
     STDERR.puts "Saved #{filename}"
   end
 
+  def get_format_string(torrents)
+    id_size = torrents.collect{|t| t[:id].length}.sort.last
+    seedleech_size = torrents.collect{|t| t[:seeders].length + t[:leechers].length + 1}.sort.last
+    ratecomment_size = torrents.collect{|t| t[:rating].length + t[:comments].length + 1}.sort.last
+    size_size = torrents.collect{|t| t[:size].length}.sort.last
+    name_size = torrents.collect{|t| t[:name].length}.sort.last
+
+    "%-#{id_size}s  %-#{seedleech_size}s  %-#{ratecomment_size}s  %-#{size_size}s  %-#{name_size}s\n"
+  end
+
   def run()
     if @options[:get]
       download_torrent("/torrent_details/#{@options[:get]}")
       exit 0
     end
     
-    search = Hpricot(open("http://isohunt.com/torrents/#{URI.escape(@input[:terms])}?iht=-1&ihp=1&ihs1=2&iho1=d", 'User-Agent' => @options[:useragent])) 
+    search_uri = "http://isohunt.com/torrents/#{URI.escape(@input[:terms])}?iht=-1&ihp=1&ihs1=2&iho1=d"
+
+    STDERR.puts("Searching for \"#{@input[:terms]}\" as #{@options[:useragent]}: #{search_uri}") if @options[:verbose]
+
+    search = Hpricot(open(search_uri, 'User-Agent' => @options[:useragent])) 
     
     torrents = []
     
@@ -83,34 +100,33 @@ class IsohuntSearch
       STDERR.puts "No matching torrents found"
       exit 1
     end
-
     
     if @options[:search]
       torrents = [{:id => "ID", :seeders => "S", :leechers => "L", :rating => "R", :comments => "C", :size => "Size", :name => "Name"}] + torrents;
 
-      id_size = torrents.collect{|t| t[:id].length}.sort.last
-      seedleech_size = torrents.collect{|t| t[:seeders].length + t[:leechers].length + 1}.sort.last
-      ratecomment_size = torrents.collect{|t| t[:rating].length + t[:comments].length + 1}.sort.last
-      size_size = torrents.collect{|t| t[:size].length}.sort.last
-      name_size = torrents.collect{|t| t[:name].length}.sort.last
-
-      format = "%-#{id_size}s  %-#{seedleech_size}s  %-#{ratecomment_size}s  %-#{size_size}s  %-#{name_size}s\n"
+      format = get_format_string(torrents)
 
       torrents.each do |t| 
-        printf(format, t[:id], "#{t[:seeders]}/#{t[:leechers]}", "#{t[:rating]}/#{t[:comments]}", t[:size], t[:name])
+        STDERR.printf(format, t[:id], "#{t[:seeders]}/#{t[:leechers]}", "#{t[:rating]}/#{t[:comments]}", t[:size], t[:name])
       end
     else
-      if torrents[0][:seeders].to_i < 5
+      if !@options[:force] && torrents[0][:seeders].to_i < 5
         STDERR.puts "The best-looking torrent looks useless (#{torrents[0][:seeders]} seeders), giving up."
         exit 1
       end
       
+      if !@options[:force] && torrents[0][:rating].to_i < 0
+        STDERR.puts "The best-looking torrent looks useless (negative rating: #{torrents[0][:rating]}), giving up."
+        exit 1
+      end
+
       if torrents[0][:seeders].to_i < 100
         STDERR.puts "The best-looking torrent looks a bit squiffy (only #{torrents[0][:seeders]} seeders), but using it anyway"
       end
 
-      if torrents[0][:rating].to_i < 0
-        STDERR.puts "The best-looking torrent looks suspicious. It has a negative rating: #{torrents[0][:rating]}. Giving up."
+      if @options[:verbose]
+        format = get_format_string(torrents)
+        printf("Chose torrent: "+format, torrents[0][:id], "#{torrents[0][:seeders]}/#{torrents[0][:leechers]}", "#{torrents[0][:rating]}/#{torrents[0][:comments]}", torrents[0][:size], torrents[0][:name])
       end
 
       if @options[:print]
@@ -119,7 +135,7 @@ class IsohuntSearch
         download_torrent(torrents[0][:details_path], torrents[0][:name])
       end
     end
-    1
+    0
   end
 
   def process_arguments(arguments, stdin)
@@ -129,6 +145,8 @@ class IsohuntSearch
     options[:get] = nil
     options[:search] = false
     options[:print] = false
+    options[:force] = false
+    options[:verbose] = false
     options[:useragent] = "Firefox"
 
     opts = OptionParser.new do |opts|
@@ -156,6 +174,14 @@ class IsohuntSearch
 
       opts.on("-p", "--print", "Print the URI of the best-looking torrent rather than downloading it") do |print|
         options[:print] = print
+      end
+
+      opts.on("-v", "--verbose", "Produce verbose output") do |verbose|
+        options[:verbose] = verbose
+      end
+
+      opts.on("-f", "--force", "Skip checks for bad torrents and force a download of whatever is found") do |force|
+        options[:force] = force
       end
 
       opts.on("-u STRING", "--user-agent STRING", "Specify a user agent. Default: #{options[:useragent]}") do |useragent|
