@@ -2,30 +2,27 @@
 # Other machines
 #
 
-alias dexty='ssh harry@thedextrousweb.com'
+alias dexty='ssh harry@dexty.dxw.net'
+alias hobnob='ssh harry@hobnob.dxw.net'
 alias prospect='ssh prospect@prospect-magazine.co.uk'
 alias caresupp='ssh admin@caresuppor.vm.bytemark.co.uk'
 alias whiskey='ssh harry@whiskey.ukcod.org.uk'
 alias haggis='ssh harry@haggis.ukcod.org.uk'
-alias cnm='ssh root@cnm.independent.gov.uk'
 alias learnrev='ssh rails@learnrev-001.vm.brightbox.net'
 alias home='wget -q -O /tmp/home.txt http://harrymetcalfe.com/misc/home.txt ; source /tmp/home.txt ; rm /tmp/home.txt ; ssh harry@$HOME_IP'
 alias work='ssh harry@87.236.135.205'
 alias lain='ssh lain'
-alias ipsa='ssh ipsacon.dh.bytemark.co.uk'
-alias 2020pst='ssh domain2552305@ssh.onlineorinline.2020publicservicestrust.org'
-alias l4h='ssh 84.22.182.47'
 
 #
 # Commands
 #
 
-alias j='jedit'
 alias wget='wget -erobots=off --no-check-certificate'
 alias time="command time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
 alias ls="ls --color"
 alias ll="ls -la"
+alias llh="ls -lah"
 alias apt="sudo aptitude"
 
 
@@ -34,6 +31,6 @@ alias apt="sudo aptitude"
 #
 
 xmodmap -e "remove lock = Caps_Lock"
-export PATH=$PATH:~/bin
+export PATH=$PATH:~/bin:/opt/ruby1.8/bin/
 EDITOR=vim
 VISUAL=vim
