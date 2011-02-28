@@ -19,8 +19,19 @@ class Day9DL
       video_uri = @input[:video]
     end
 
-    player = open(video_uri).read
 
+    # Look for an HD version and use it if there is one
+    player = Hpricot(open(video_uri).read);
+
+    (player/'#SelectFormat option').each do |option| 
+      if option.inner_text.match('HD') 
+        video_uri = "http://blip.tv#{option[:value]}"
+      end
+    end
+
+    puts video_uri
+
+    player = open(video_uri).read
     matches = player.match(/player\.setPrimaryMediaUrl\("(.+)"\);/)
 
     if !matches || matches[1] == nil
