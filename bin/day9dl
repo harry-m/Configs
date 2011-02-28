@@ -33,13 +33,14 @@ class Day9DL
 
     player = open(video_uri).read
     matches = player.match(/player\.setPrimaryMediaUrl\("(.+)"\);/)
+    title = (Hpricot(player)/'div#EpisodeTitle').inner_text.gsub(/[^\w\._-]+/, '_')
 
     if !matches || matches[1] == nil
       STDERR.puts "Couldn't find primary media URL";
       exit 1
     end
 
-    system("wget '#{matches[1]}'")
+    system("wget -O #{title}.flv '#{matches[1]}'")
     exit 0
   end
 
