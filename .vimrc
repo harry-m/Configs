@@ -6,6 +6,17 @@ set smarttab
 set shiftwidth=2
 set softtabstop=2
 set expandtab
+set hidden
+set history=1000
+set wildmenu
+set ignorecase 
+set smartcase
+set title
+set scrolloff=3
+set backupdir=~/.vim-tmp,/tmp
+set directory=~/.vim-tmp,/tmp
+
+
 
 " Enable incremental search.
 set incsearch
