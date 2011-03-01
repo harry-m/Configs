@@ -5,6 +5,7 @@
 .screen-profiles/
 .sudo_as_admin_successful
 .adobe/
+.rtorrent.rc
 .appdata/
 .bash_history
 .bash_profile
