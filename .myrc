@@ -12,7 +12,8 @@ alias learnrev='ssh rails@learnrev-001.vm.brightbox.net'
 alias home='wget -q -O /tmp/home.txt http://harrymetcalfe.com/misc/home.txt ; source /tmp/home.txt ; rm /tmp/home.txt ; ssh harry@$HOME_IP'
 alias work='ssh harry@87.236.135.205'
 alias lain='ssh lain'
-alias gcn='ssh hmetcalfe@46.51.172.36'
+alias oldgcn='ssh hmetcalfe@46.51.172.36'
+alias gcn='ssh hmetcalfe@46.137.107.143'
 
 #
 # Commands
