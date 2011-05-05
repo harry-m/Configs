@@ -64,5 +64,3 @@ while tweet.length > 140
 end
 
 # Tweet it
-#puts ("TWITTER_USER=ipsumamet TWITTER_PASS=asuipapasd908g /home/harry/bin/tweet #{tweet}")
-#puts system("TWITTER_USER=ipsumamet TWITTER_PASS=asuipapasd908g /home/harry/bin/tweet #{tweet}")
