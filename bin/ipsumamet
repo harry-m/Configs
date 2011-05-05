@@ -1,0 +1,68 @@
+#!/usr/bin/ruby1.8
+
+require 'rubygems'
+require 'hpricot'
+require 'open-uri'
+require 'twitter'
+
+# Generate some lorem
+
+words = File.read('words.txt').split(/\n/)
+
+reserved = ['home', 'account', 'admin', 'help', 'login', 'signup', 'about', 'replies', 'direct_messages', 'favourites', 'public_timeline', 'invitations', 'downloads', 'jobs', 'terms', 'privacy', 'sessions', 'archive']
+
+tweet = ''
+
+(5 + rand(35)).times do 
+  tweet = tweet + words[rand(words.length-1)] + ' '
+end
+
+tweet.capitalize!
+
+# Retweet something occasionally
+tweet = "RT @#{reserved[rand(reserved.length-1)]}: #{tweet}" if rand(10) == 1
+
+# Reply to people
+tweet = "@#{reserved[rand(reserved.length-1)]} #{tweet}" if rand(5) == 1
+tweet = "@#{reserved[rand(reserved.length-1)]} #{tweet}" if rand(5) == 1
+tweet = "@#{reserved[rand(reserved.length-1)]} #{tweet}" if rand(5) == 1
+
+# Use a tag now & then
+word = words[rand(words.length-1)]
+tweet = tweet.sub(word, "##{word}")
+
+# Link to things
+# Fetch a link
+
+if rand(3) == 1
+  links = []
+
+  rss = Hpricot(open('http://digg.com/search?q=lorem&sort=newest'))
+  (rss/'h3.story-item-title a').each do |a|
+    links << "http://digg.com#{a[:href]}"
+  end
+
+  link = links[rand(links.length-1)]
+  bitly = open("http://api.bitly.com/v3/shorten?login=harrym&apiKey=R_a73294fcbba1a7363ba315d215674187&format=txt&longUrl=#{link}").read
+
+  tweet = "#{tweet}#{bitly} "
+end
+
+# Sometimes, use a smily
+smilies = ['<3', ':)', ':(', '>.<', '-_^', '>:(', ':|', ':*(']
+tweet = "#{tweet}#{smilies[rand(smilies.length-1)]} " if rand(20) == 1
+
+# Get rid of the trailing space
+tweet.strip!
+
+# Make sure it's not too long
+while tweet.length > 140
+  # Oh dear. Remove some words.
+  tweet.slice!(0, tweet.index(' '))
+  tweet.strip!
+  tweet.capitalize!
+end
+
+# Tweet it
+#puts ("TWITTER_USER=ipsumamet TWITTER_PASS=asuipapasd908g /home/harry/bin/tweet #{tweet}")
+#puts system("TWITTER_USER=ipsumamet TWITTER_PASS=asuipapasd908g /home/harry/bin/tweet #{tweet}")
