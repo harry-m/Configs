@@ -39,3 +39,9 @@ autocmd BufReadPost *
 com Wq :wq
 nmap <Esc>o :exe "norm o<Bslash><Char-0x3c>Esc>k0".(col('.')-1)."l"<CR>
 
+" Make encryption more secure
+setlocal cm=blowfish
+autocmd BufReadPre * if system("head -c 9 " . expand("<afile>")) == "VimCrypt~" | call SetupEncryption() | endif
+function SetupEncryption()
+ setlocal noswapfile nobackup nowritebackup viminfo=
+endfunction
