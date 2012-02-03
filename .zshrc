@@ -77,5 +77,8 @@ export PS1=$commandline
 # Aliases and old bash stuff
 source ~/.myrc
 
+# Start dotjs
+/home/harry/bin/djsd -d
+
 # Funky zsh aliasfunction magic
 mcd() { mkdir -p "$1" && cd "$1" }
