@@ -63,22 +63,29 @@ if [[ $UID -eq 0 ]]; then
   commandline="$commandline$PR_NO_COLOUR"
 fi
 
-## Path
-commandline="$commandline:%~"
 
 ## Git stuff
-commandline="$commandline$PR_LIGHT_MAGENTA\$vcs_info_msg_0_$PR_NO_COLOUR"
+if [[ $EUID -ne 0 ]]; then
+  commandline="$commandline$PR_LIGHT_MAGENTA\$vcs_info_msg_0_$PR_NO_COLOUR"
+fi
+
+## Path
+commandline="$commandline:%~"
 
 ## Prompt char
 commandline="$commandline%# "
 
 export PS1=$commandline
 
-# Aliases and old bash stuff
-source ~/.myrc
+alias wget='wget -erobots=off --no-check-certificate'
+alias time="command time -f '%C real %e user %U sys %S'"
+alias tidy="tidy -i"
+alias ls="ls --color"
+alias ll="ls -la"
+alias llh="ls -lah"
 
 # Start dotjs
-/home/harry/bin/djsd -d
+#/home/harry/bin/djsd -d
 
 # Funky zsh aliasfunction magic
 mcd() { mkdir -p "$1" && cd "$1" }
