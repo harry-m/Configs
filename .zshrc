@@ -79,6 +79,8 @@ commandline="$commandline%# "
 
 export PS1=$commandline
 
+#alias home='wget -q -O /tmp/home.txt http://harrymetcalfe.com/misc/home.txt ; source /tmp/home.txt ; rm /tmp/home.txt ; ssh harry@$HOME_IP'
+
 alias wget='wget -erobots=off --no-check-certificate'
 alias time="command time -f '%C real %e user %U sys %S'"
 alias tidy="tidy -i"
