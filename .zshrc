@@ -2,6 +2,8 @@
 HISTFILE=~/.histfile
 HISTSIZE=10000
 SAVEHIST=10000
+EDITOR=vim
+VISUAL=vim
 
 # Autocompletion
 autoload -Uz compinit && compinit
