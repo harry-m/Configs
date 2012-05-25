@@ -29,20 +29,22 @@ class EpGuides
     
     series[0].gsub!(/\.|_\-/, ' ')
     
+    puts "Detected series name: #{series[0]}"
+    
     series[0]
   end
   
   def get_epguides_url(series)
-    "http://epguides.com/" + series.gsub(/^The|\s/, '')
+    "http://epguides.com/" + URI.escape(series.gsub(/^The|\s/, ''))
   end
   
   def parse_episodes(episode_data)
     episodes = []
 
-    episode_lines = episode_data.gsub(/\r\n/, "\n").split("\n").select{|line| line.match(/^\s*\d+\s+\d+-(.+)\>$/)}.each do |line|
+    episode_lines = episode_data.gsub(/\r\n/, "\n").split("\n").select{|line| line.match(/^\s*\d+\s+\d+-(.+)$/)}.each do |line|
       # 78     4-21      4AKJ21    15/May/09   <a href="http://www.tvrage.com/Prison_Break/episodes/785054">Rate of Exchange</a> <span class="Trailers">[<a href="http://www.tvrage.com/Prison_Break/episodes/785054/?trailer=1#trailer">Trailer</a>]</span>
       matches = line.match(/^\s*(\d+)\s+([0-9]+)-\s*([0-9]+).+?"([^"]+)".*?>([^<]+)<\/a>\s*/)
-      
+
       if !matches
         puts "Warning: Unable to parse line from epguides:\n#{line}" if @options[:verbose]
         next
@@ -55,6 +57,7 @@ class EpGuides
         :link    => matches[4],
         :name    => matches[5].gsub(/[\/\\\?:*<>|]/, '_')         
       }
+
     end
 
     if episodes.empty?
@@ -82,9 +85,17 @@ class EpGuides
         :chunk => matches[0],
         :extension => filename.match(/(\.[^\.]+)$/)[1]
       }
+    elsif matches = filename.downcase.match(/\b([0-9]+?)\.([0-9]{2})\b/)
+      return {
+        :format => :dot,
+        :season => matches[1].to_i,
+        :episode => matches[2].to_i,
+        :chunk => matches[0],
+        :extension => filename.match(/(\.[^\.]+)$/)[1]
+      }
     elsif matches = filename.downcase.match(/\b([0-9]+?)([0-9]{2})\b/)
       return {
-        :format => :se,
+        :format => :num,
         :season => matches[1].to_i,
         :episode => matches[2].to_i,
         :chunk => matches[0],
