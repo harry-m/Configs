@@ -106,6 +106,8 @@ class IsohuntSearch
 
       format = get_format_string(torrents)
 
+      torrents.sort! {|a,b| b[:seeders].to_i <=> a[:seeders].to_i }
+
       torrents.each do |t| 
         STDERR.printf(format, t[:id], "#{t[:seeders]}/#{t[:leechers]}", "#{t[:rating]}/#{t[:comments]}", t[:size], t[:name])
       end
