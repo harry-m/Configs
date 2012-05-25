@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source ~/.credentials
+if [ -z "$TWITTER_USER" ]
+then
+ source ~/.credentials
+fi
 
 if [ -n "$*" ] 
 then 
