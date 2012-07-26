@@ -1,4 +1,6 @@
 .adobe/
+.dropbox-dist/
+Audit/
 .appdata/
 .aptitude/
 .bash_history
